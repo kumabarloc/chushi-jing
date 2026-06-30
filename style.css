@@ -1,0 +1,398 @@
+/* ============================================
+   处世悬镜 PWA — 古典纸感
+   ============================================ */
+
+/* 字体栈：思源宋体优先，楷体回落，系统衬线 */
+:root {
+  --paper-bg: #F4E8D0;          /* 米黄纸色 */
+  --paper-bg-2: #EDDDB8;        /* 深一点 */
+  --ink: #1F1611;               /* 墨色 */
+  --ink-soft: #4A3A2A;          /* 软墨色 */
+  --ink-light: #8A7858;         /* 浅墨色 */
+  --seal: #B23A2A;              /* 印泥红 */
+  --line: #B89F6E;              /* 装饰线 */
+  --shadow: rgba(80, 50, 20, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Source Han Serif CN",
+               "Songti SC", "STSong", "SimSun", "宋体", serif;
+  background: var(--paper-bg);
+  color: var(--ink);
+  /* 仿纸纹：用两层径向渐变模拟宣纸 */
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(184, 159, 110, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 159, 110, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 240, 200, 0.4) 0%, transparent 70%);
+  /* 噪点纹理 - 极淡 */
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(120, 90, 50, 0.015) 2px, rgba(120, 90, 50, 0.015) 3px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 2px, rgba(120, 90, 50, 0.015) 2px, rgba(120, 90, 50, 0.015) 3px);
+  z-index: 0;
+}
+
+/* ============================================
+   主内容卡片
+   ============================================ */
+#card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  cursor: pointer;
+  outline: none;
+  /* 留出顶部工具条空间 */
+  padding-top: calc(env(safe-area-inset-top) + 60px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 60px);
+}
+
+#card:active .paper {
+  transform: scale(0.99);
+  transition: transform 0.1s ease;
+}
+
+.paper {
+  width: 100%;
+  max-width: 640px;
+  min-height: 70vh;
+  background: var(--paper-bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 40px 32px 32px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow:
+    0 2px 8px var(--shadow),
+    inset 0 0 40px rgba(184, 159, 110, 0.15);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* 切换时的淡入动画 */
+.paper.fading {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* 顶部装饰线 */
+.paper::before {
+  content: '';
+  position: absolute;
+  top: 16px; left: 16px; right: 16px; bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ============================================
+   印章
+   ============================================ */
+.seal {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  background: var(--seal);
+  color: var(--paper-bg);
+  font-size: 24px;
+  font-weight: 700;
+  font-family: "STKaiti", "KaiTi", "楷体", serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 0 0 2px var(--paper-bg-2),
+    0 1px 3px var(--shadow);
+  transform: rotate(-3deg);
+  /* 印泥不规则边缘 */
+  filter: contrast(1.1);
+  z-index: 2;
+}
+
+.seal::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background-image: radial-gradient(circle at 30% 30%, transparent 0%, transparent 90%, rgba(0, 0, 0, 0.15) 100%);
+  pointer-events: none;
+}
+
+/* ============================================
+   引文主体
+   ============================================ */
+.quote {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+  padding: 32px 0 24px;
+}
+
+.quote-text {
+  font-size: clamp(22px, 5.5vw, 32px);
+  line-height: 1.9;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  max-width: 100%;
+  /* 段首不缩进 */
+  text-indent: 0;
+}
+
+.attribution {
+  margin-top: 20px;
+  font-size: clamp(13px, 3.2vw, 15px);
+  color: var(--ink-light);
+  letter-spacing: 0.1em;
+  font-style: normal;
+}
+
+/* ============================================
+   解读
+   ============================================ */
+.interp {
+  width: 100%;
+  text-align: center;
+  font-size: clamp(13px, 3.2vw, 15px);
+  line-height: 1.9;
+  color: var(--ink-soft);
+  letter-spacing: 0.03em;
+  padding: 16px 8px;
+  border-top: 1px dashed var(--line);
+  margin-top: 16px;
+  font-weight: 400;
+}
+
+.interp[hidden] { display: none; }
+
+/* ============================================
+   底部提示
+   ============================================ */
+.hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.hint-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line), transparent);
+  max-width: 60px;
+}
+
+.hint-text {
+  font-size: 11px;
+  color: var(--ink-light);
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+/* ============================================
+   顶部工具条
+   ============================================ */
+.toolbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+  pointer-events: none;
+}
+
+.tool-btn {
+  pointer-events: auto;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  background: var(--paper-bg-2);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-family: inherit;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-btn:active {
+  background: var(--line);
+  color: var(--paper-bg-2);
+}
+
+.counter {
+  font-size: 12px;
+  color: var(--ink-light);
+  letter-spacing: 0.1em;
+  background: rgba(244, 232, 208, 0.6);
+  padding: 4px 12px;
+  border-radius: 12px;
+  pointer-events: auto;
+}
+
+/* ============================================
+   关于弹窗
+   ============================================ */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(31, 22, 17, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal[hidden] { display: none; }
+
+.modal-card {
+  background: var(--paper-bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 32px 28px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 4px 20px var(--shadow);
+}
+
+.modal-card h2 {
+  font-size: 24px;
+  margin-bottom: 4px;
+  letter-spacing: 0.2em;
+  color: var(--ink);
+}
+
+.modal-author {
+  font-size: 13px;
+  color: var(--ink-light);
+  margin-bottom: 20px;
+  letter-spacing: 0.1em;
+}
+
+.modal-desc {
+  font-size: 14px;
+  line-height: 2;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+  letter-spacing: 0.05em;
+}
+
+.modal-source {
+  font-size: 11px;
+  color: var(--ink-light);
+  line-height: 1.8;
+  margin-bottom: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+  letter-spacing: 0.05em;
+}
+
+.btn-close {
+  padding: 8px 24px;
+  background: var(--ink);
+  color: var(--paper-bg);
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.2em;
+  transition: opacity 0.2s;
+}
+
+.btn-close:active { opacity: 0.7; }
+
+/* ============================================
+   Toast
+   ============================================ */
+.toast {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom) + 100px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper-bg);
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  z-index: 200;
+  animation: toastIn 0.3s ease;
+  pointer-events: none;
+}
+
+.toast[hidden] { display: none; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ============================================
+   响应式
+   ============================================ */
+@media (max-width: 380px) {
+  .paper { padding: 32px 20px 24px; }
+  .quote-text { font-size: 20px; }
+  .seal { width: 40px; height: 40px; font-size: 20px; top: 18px; right: 18px; }
+}
+
+@media (min-width: 768px) {
+  .quote-text { font-size: 30px; }
+  .paper { padding: 56px 48px 40px; }
+}
+
+/* 横屏适配 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .paper { min-height: auto; padding: 32px 32px 20px; }
+  .quote { padding: 16px 0; }
+  .quote-text { font-size: 20px; line-height: 1.7; }
+  .interp { font-size: 13px; }
+}

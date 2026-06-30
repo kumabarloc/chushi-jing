@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#C8A165">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="悬镜">
+  <meta name="description" content="南北朝傅昭《处世悬镜》— 每日一句 memento">
+
+  <title>处世悬镜 · 每日一句</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 主内容区 - 点击换句 -->
+  <main id="card" role="button" tabindex="0" aria-label="点击换下一句">
+    <div class="paper">
+
+      <!-- 顶部装饰：印章 -->
+      <div class="seal" aria-hidden="true">镜</div>
+
+      <!-- 主体内容 -->
+      <article class="quote">
+        <blockquote id="quote-text" class="quote-text">
+          <!-- 句子动态插入 -->
+        </blockquote>
+        <div class="attribution">
+          ——《<span id="quote-ch">识之</span>》
+        </div>
+      </article>
+
+      <!-- 解读 -->
+      <div id="interp" class="interp">
+        <!-- 解读动态插入 -->
+      </div>
+
+      <!-- 底部提示 -->
+      <div class="hint" aria-hidden="true">
+        <span class="hint-line"></span>
+        <span class="hint-text">轻触换一句 · 长按复制</span>
+        <span class="hint-line"></span>
+      </div>
+    </div>
+  </main>
+
+  <!-- 顶部工具条 -->
+  <div class="toolbar" role="toolbar">
+    <button id="btn-info" class="tool-btn" aria-label="关于" title="关于">关</button>
+    <span id="counter" class="counter" aria-live="polite">1 / 108</span>
+  </div>
+
+  <!-- 关于弹窗 -->
+  <div id="info-modal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>处世悬镜</h2>
+      <p class="modal-author">南北朝 · 傅昭</p>
+      <p class="modal-desc">
+        一本教人如何为人处世的经典古书。<br>
+        行为上，识为先；藏者盛，舍者得；<br>
+        曲为聪，止为智；忍为要，厚者成；信者无敌。
+      </p>
+      <p class="modal-source">
+        简体原文：古文岛<br>
+        繁体原文：维基文库<br>
+        解读：综合多版本注释<br>
+        整理：河马 🦛 2026-06-30
+      </p>
+      <button id="btn-close-info" class="btn-close">知道了</button>
+    </div>
+  </div>
+
+  <!-- 复制提示 -->
+  <div id="toast" class="toast" hidden>已复制</div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
