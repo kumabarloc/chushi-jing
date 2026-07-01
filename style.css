@@ -373,6 +373,153 @@ body::before {
 .btn-close:active { opacity: 0.7; }
 
 /* ============================================
+   章节阅读（整章列表）
+   ============================================ */
+
+/* 章节模式允许页面滚动 */
+html.chapter-mode,
+html.chapter-mode body {
+  height: auto !important;
+  overflow: auto !important;
+}
+
+/* 章节模式隐藏单句卡片 */
+body.chapter-mode #card {
+  display: none !important;
+}
+
+#chapter-reader {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 64px) 24px calc(env(safe-area-inset-bottom) + 60px);
+}
+
+#chapter-reader[hidden] { display: none; }
+
+/* 章节顶部 */
+.chapter-header {
+  text-align: center;
+  padding: 24px 16px 28px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+
+.chapter-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 3px;
+  background: var(--paper-bg-2);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.chapter-name {
+  font-size: clamp(28px, 6.5vw, 38px);
+  font-weight: 500;
+  letter-spacing: 0.4em;
+  padding-left: 0.4em;
+  color: var(--ink);
+  margin: 0;
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+
+.chapter-meta {
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: var(--ink-light);
+  margin-top: 12px;
+  opacity: 0.7;
+  padding-left: 0.25em;
+}
+
+/* 单句结构 */
+.verse {
+  display: flex;
+  gap: 14px;
+  padding: 18px 4px;
+  border-bottom: 1px dashed var(--line);
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 2px;
+  margin: 0 -4px;
+}
+
+.verse:last-of-type {
+  border-bottom: none;
+}
+
+.verse:active {
+  background: rgba(184, 159, 110, 0.18);
+}
+
+.verse-num {
+  flex: none;
+  font-size: 13px;
+  color: var(--ink-light);
+  font-weight: 500;
+  width: 26px;
+  text-align: right;
+  opacity: 0.55;
+  padding-top: 4px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+}
+
+.verse-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.verse-text {
+  font-size: clamp(17px, 4.2vw, 22px);
+  line-height: 1.95;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+
+.verse-interp {
+  font-size: clamp(13px, 3.2vw, 15px);
+  line-height: 1.8;
+  color: var(--ink-soft);
+  letter-spacing: 0.03em;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px dotted rgba(184, 159, 110, 0.4);
+}
+
+.verse-interp:empty {
+  display: none;
+}
+
+/* 章节已毕 */
+.chapter-end {
+  text-align: center;
+  padding: 48px 0 32px;
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  color: var(--ink-light);
+  opacity: 0.55;
+  padding-left: 0.4em;
+}
+
+.chapter-end::before,
+.chapter-end::after {
+  content: '·';
+  margin: 0 14px;
+  opacity: 0.6;
+}
+
+/* ============================================
    抽屉（目录）
    ============================================ */
 .drawer {

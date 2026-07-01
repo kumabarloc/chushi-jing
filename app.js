@@ -1,6 +1,6 @@
 // ============================================
 // 处世悬镜 PWA — 主逻辑
-// 状态机: random (随机阅读) ↔ chapter (章节阅读)
+// 模式: random (单句随机) ↔ chapter (整章列表阅读)
 // ============================================
 
 (function() {
@@ -21,6 +21,7 @@
 
   // ---- DOM ----
   const card = document.getElementById('card');
+  const chapterReader = document.getElementById('chapter-reader');
   const quoteText = document.getElementById('quote-text');
   const quoteCh = document.getElementById('quote-ch');
   const interp = document.getElementById('interp');
@@ -40,10 +41,17 @@
   const modeRandomBtn = document.getElementById('mode-random');
 
   // ============================================
+  // 工具：HTML 转义（防止 interp 里有特殊字符破坏结构）
+  // ============================================
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  // ============================================
   // 章节工具（按 ch 字段切分 QUOTES）
   // ============================================
-
-  // 章节列表（按首句 n 排序）
   function getChapterList() {
     const map = new Map();
     QUOTES.forEach(q => {
@@ -52,10 +60,9 @@
     });
     return [...map.entries()]
       .sort((a, b) => a[1][0].n - b[1][0].n)
-      .map(([name, quotes]) => ({ name, count: quotes.length, startIdx: QUOTES.indexOf(quotes[0]) }));
+      .map(([name, quotes]) => ({ name, count: quotes.length }));
   }
 
-  // 章节在 QUOTES 数组中的 [start, end) 区间（依赖 QUOTES 按章节顺序连续排列）
   function getChapterBounds(chName) {
     const start = QUOTES.findIndex(q => q.ch === chName);
     if (start === -1) return { start: -1, end: -1, count: 0 };
@@ -64,29 +71,13 @@
     return { start, end, count: end - start };
   }
 
-  // ============================================
-  // 章节进度持久化（sessionStorage，关闭标签页即清）
-  // ============================================
-  function saveChapterProgress() {
-    if (state.mode !== 'chapter' || !state.currentChapter) return;
-    const { start, count } = getChapterBounds(state.currentChapter);
-    const k = state.currentIdx - start;  // 0-indexed 在章节内的位置
-    try { sessionStorage.setItem(`chushi:progress:${state.currentChapter}`, k); } catch (e) {}
-  }
-
-  function loadChapterProgress(chName) {
-    try {
-      const v = sessionStorage.getItem(`chushi:progress:${chName}`);
-      return v !== null ? parseInt(v, 10) : 0;
-    } catch (e) { return 0; }
-  }
-
-  function clearChapterProgress(chName) {
-    try { sessionStorage.removeItem(`chushi:progress:${chName}`); } catch (e) {}
+  function getChapterQuotes(chName) {
+    const { start, end } = getChapterBounds(chName);
+    return QUOTES.slice(start, end);
   }
 
   // ============================================
-  // 随机选句（避免连续两句相同）
+  // 随机选句
   // ============================================
   function randIdx() {
     if (QUOTES.length <= 1) return 0;
@@ -97,7 +88,7 @@
   }
 
   // ============================================
-  // 显示句子（mode-aware）
+  // 显示单句（仅随机模式）
   // ============================================
   function showQuote(idx) {
     const q = QUOTES[idx];
@@ -110,107 +101,117 @@
       interp.textContent = '';
       interp.hidden = true;
     }
-
-    // 计数器 + 副标题：mode 决定显示内容
-    if (state.mode === 'chapter') {
-      const { start, count } = getChapterBounds(state.currentChapter);
-      const k = idx - start;
-      counter.textContent = `${state.currentChapter} ${k + 1}/${count}`;
-    } else {
-      counter.textContent = `${idx + 1} / ${QUOTES.length}`;
-    }
-
+    counter.textContent = `${idx + 1} / ${QUOTES.length}`;
     state.currentIdx = idx;
     state.lastIdx = idx;
     document.title = `${q.text.slice(0, 12)}… — 处世悬镜`;
   }
 
   // ============================================
-  // 下一句（mode-aware）
+  // 渲染整章列表（章节模式）
+  // ============================================
+  function renderChapter(chName) {
+    const quotes = getChapterQuotes(chName);
+    const html = `
+      <div class="chapter-header">
+        <h2 class="chapter-name">${escapeHtml(chName)}</h2>
+        <div class="chapter-meta">共 ${quotes.length} 句 · 傅昭《处世悬镜》</div>
+      </div>
+
+      <div class="chapter-verses">
+        ${quotes.map(q => `
+          <div class="verse" data-n="${q.n}">
+            <div class="verse-num">${q.n}</div>
+            <div class="verse-body">
+              <p class="verse-text">${escapeHtml(q.text)}</p>
+              ${q.interp && q.interp.trim()
+                ? `<p class="verse-interp">${escapeHtml(q.interp)}</p>`
+                : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="chapter-end">本章已毕</div>
+    `;
+    chapterReader.innerHTML = html;
+  }
+
+  // ============================================
+  // 下一句（仅随机模式）
   // ============================================
   function nextQuote() {
+    if (state.mode !== 'random') return;
     if (state.isAnimating) return;
     state.isAnimating = true;
     paper.classList.add('fading');
     setTimeout(() => {
-      if (state.mode === 'random') {
-        showQuote(randIdx());
-      } else {
-        const { start, count } = getChapterBounds(state.currentChapter);
-        const k = state.currentIdx - start;
-        if (k < count - 1) {
-          showQuote(start + k + 1);
-          saveChapterProgress();
-        } else {
-          showChapterComplete();
-        }
-      }
+      showQuote(randIdx());
       paper.classList.remove('fading');
       state.isAnimating = false;
     }, 250);
   }
 
   // ============================================
-  // 章节完成提示
-  // ============================================
-  function showChapterComplete() {
-    const { count } = getChapterBounds(state.currentChapter);
-    const chName = state.currentChapter;
-    quoteText.textContent = `「${chName}」已毕`;
-    quoteCh.textContent = '';
-    interp.textContent = `本章 ${count} 句，承蒙读完。`;
-    interp.hidden = false;
-    counter.textContent = '✓';
-    showToast(`「${chName}」共 ${count} 句已毕`);
-
-    // 1.6 秒后：清进度 + 退随机 + 打开目录
-    setTimeout(() => {
-      clearChapterProgress(chName);
-      exitChapterMode();
-      openDrawer();
-    }, 1600);
-  }
-
-  // ============================================
-  // 章节模式切换
+  // 模式切换
   // ============================================
   function enterChapterMode(chName) {
-    const { start, count } = getChapterBounds(chName);
-    if (start === -1) return;
+    const { count } = getChapterBounds(chName);
+    if (count === 0) return;
     state.mode = 'chapter';
     state.currentChapter = chName;
-    const k = loadChapterProgress(chName);
-    const idx = Math.min(k, count - 1);
-    document.body.classList.add('chapter-mode');
+
+    // UI 切换
+    document.documentElement.classList.add('chapter-mode');
+    card.hidden = true;
+    chapterReader.hidden = false;
+
+    renderChapter(chName);
+
     brandSub.textContent = chName;
     updateNavBtn('←', '返回随机');
-    updateHint();
+    updateCounter();
     updateChapterListHighlight();
-    showQuote(start + idx);
+
+    // 滚到顶部
+    window.scrollTo(0, 0);
   }
 
   function exitChapterMode() {
     state.mode = 'random';
     state.currentChapter = null;
-    document.body.classList.remove('chapter-mode');
+
+    document.documentElement.classList.remove('chapter-mode');
+    card.hidden = false;
+    chapterReader.hidden = true;
+
     brandSub.textContent = '南北朝 傅昭';
     updateNavBtn('≡', '目录');
-    updateHint();
+
+    // 重置单句（如果还没初始化）
+    if (state.currentIdx === -1) {
+      showQuote(randIdx());
+    } else {
+      updateCounter();
+    }
     updateChapterListHighlight();
+    window.scrollTo(0, 0);
   }
 
-  // 工具栏 nav 按钮：mode 决定文字和行为
   function updateNavBtn(text, label) {
     btnNav.textContent = text;
     btnNav.setAttribute('aria-label', label);
     btnNav.setAttribute('title', label);
   }
 
-  function updateHint() {
+  function updateCounter() {
     if (state.mode === 'chapter') {
-      hintText.textContent = '轻触下一句 · 长按复制';
+      const { count } = getChapterBounds(state.currentChapter);
+      counter.textContent = `${state.currentChapter} · ${count} 句`;
+    } else if (state.currentIdx >= 0) {
+      counter.textContent = `${state.currentIdx + 1} / ${QUOTES.length}`;
     } else {
-      hintText.textContent = '轻触换一句 · 长按复制';
+      counter.textContent = `1 / ${QUOTES.length}`;
     }
   }
 
@@ -221,8 +222,7 @@
     state.drawerOpen = true;
     drawer.hidden = false;
     drawerOverlay.hidden = false;
-    // 强制 reflow 后再加 class，触发 transition
-    void drawer.offsetWidth;
+    void drawer.offsetWidth;  // 强制 reflow
     drawer.classList.add('open');
     drawerOverlay.classList.add('open');
   }
@@ -231,7 +231,6 @@
     state.drawerOpen = false;
     drawer.classList.remove('open');
     drawerOverlay.classList.remove('open');
-    // 等过渡结束再 hidden
     setTimeout(() => {
       if (!state.drawerOpen) {
         drawer.hidden = true;
@@ -251,15 +250,14 @@
   function renderChapterList() {
     const chapters = getChapterList();
     chapterList.innerHTML = chapters.map(ch => `
-      <button class="chapter-item" data-ch="${ch.name}">
-        <span class="ci-name">${ch.name}</span>
+      <button class="chapter-item" data-ch="${escapeHtml(ch.name)}">
+        <span class="ci-name">${escapeHtml(ch.name)}</span>
         <span class="ci-meta">${ch.count} 句</span>
       </button>
     `).join('');
   }
 
   function updateChapterListHighlight() {
-    // 高亮当前章节 / 随机模式
     modeRandomBtn.classList.toggle('active', state.mode === 'random');
     chapterList.querySelectorAll('.chapter-item').forEach(btn => {
       btn.classList.toggle('active',
@@ -268,24 +266,20 @@
   }
 
   // ============================================
-  // 复制当前句
+  // 复制
   // ============================================
-  function copyCurrent() {
-    const q = QUOTES[state.currentIdx];
-    if (!q) return;
-    const text = `${q.text}\n——《${q.ch}》\n\n【解读】${q.interp || '（无解读）'}`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(showToast)
-        .catch(fallbackCopy);
-    } else {
-      fallbackCopy();
-    }
+  function buildQuoteText(q) {
+    return `${q.text}\n——《${q.ch}》\n\n【解读】${q.interp && q.interp.trim() ? q.interp : '（无解读）'}`;
   }
 
-  function fallbackCopy() {
-    const q = QUOTES[state.currentIdx];
-    const text = `${q.text}\n——《${q.ch}》\n\n【解读】${q.interp || '（无解读）'}`;
+  function doCopy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return Promise.reject(new Error('No clipboard API'));
+  }
+
+  function fallbackCopyText(text) {
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.position = 'fixed';
@@ -294,11 +288,27 @@
     ta.select();
     try {
       document.execCommand('copy');
-      showToast();
+      showToast('已复制');
     } catch (e) {
       console.error('Copy failed', e);
     }
     document.body.removeChild(ta);
+  }
+
+  // 随机模式：长按当前句复制
+  function copyCurrent() {
+    const q = QUOTES[state.currentIdx];
+    if (!q) return;
+    const text = buildQuoteText(q);
+    doCopy(text).then(() => showToast('已复制')).catch(() => fallbackCopyText(text));
+  }
+
+  // 章节模式：点击 verse 复制
+  function copyVerse(n) {
+    const q = QUOTES.find(q => q.n === n);
+    if (!q) return;
+    const text = buildQuoteText(q);
+    doCopy(text).then(() => showToast('已复制')).catch(() => fallbackCopyText(text));
   }
 
   function showToast(msg) {
@@ -309,7 +319,7 @@
   }
 
   // ============================================
-  // 长按检测
+  // 长按检测（仅随机模式生效）
   // ============================================
   function onPressStart(e) {
     state.isLongPress = false;
@@ -335,7 +345,7 @@
   }
 
   // ============================================
-  // 弹窗控制
+  // 关于弹窗
   // ============================================
   function showModal() { infoModal.hidden = false; }
   function hideModal() { infoModal.hidden = true; }
@@ -344,13 +354,11 @@
   // 事件绑定
   // ============================================
 
-  // 点击卡片：换句
+  // 随机模式：点击卡片 = 换句；长按 = 复制
   card.addEventListener('click', (e) => {
     if (state.isLongPress) { state.isLongPress = false; return; }
     nextQuote();
   });
-
-  // 长按复制
   card.addEventListener('touchstart', onPressStart, { passive: true });
   card.addEventListener('touchend', onPressEnd);
   card.addEventListener('touchcancel', onPressCancel);
@@ -365,19 +373,26 @@
     }
   });
 
-  // 工具栏：nav 按钮（mode 决定行为）
+  // 章节模式：点击 verse = 复制（事件委托，渲染后自动绑定）
+  chapterReader.addEventListener('click', (e) => {
+    if (state.mode !== 'chapter') return;
+    const verse = e.target.closest('.verse');
+    if (!verse) return;
+    const n = parseInt(verse.dataset.n, 10);
+    if (n) copyVerse(n);
+  });
+
+  // 工具栏 nav 按钮
   btnNav.addEventListener('click', (e) => {
     e.stopPropagation();
     if (state.mode === 'random') {
       toggleDrawer();
     } else {
-      // 章节模式：nav = 返回随机
       exitChapterMode();
-      showQuote(randIdx());
     }
   });
 
-  // 工具栏：info 按钮
+  // 关于弹窗
   btnInfo.addEventListener('click', (e) => {
     e.stopPropagation();
     showModal();
@@ -391,21 +406,15 @@
   btnCloseDrawer.addEventListener('click', closeDrawer);
   drawerOverlay.addEventListener('click', closeDrawer);
 
-  // 抽屉内：随机模式按钮
   modeRandomBtn.addEventListener('click', () => {
-    if (state.mode === 'chapter') {
-      exitChapterMode();
-      showQuote(randIdx());
-    }
+    if (state.mode === 'chapter') exitChapterMode();
     closeDrawer();
   });
 
-  // 抽屉内：章节点击（事件委托，列表是 JS 渲染的）
   chapterList.addEventListener('click', (e) => {
     const btn = e.target.closest('.chapter-item[data-ch]');
     if (!btn) return;
-    const chName = btn.dataset.ch;
-    enterChapterMode(chName);
+    enterChapterMode(btn.dataset.ch);
     closeDrawer();
   });
 
@@ -417,7 +426,7 @@
     lastTouchEnd = now;
   }, { passive: false });
 
-  // ESC：关弹窗/关抽屉
+  // ESC 关弹窗/抽屉
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (!infoModal.hidden) hideModal();
