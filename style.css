@@ -384,7 +384,7 @@ html.chapter-mode body {
 }
 
 /* 章节模式隐藏单句卡片 */
-body.chapter-mode #card {
+html.chapter-mode #card {
   display: none !important;
 }
 
@@ -501,23 +501,7 @@ body.chapter-mode #card {
   display: none;
 }
 
-/* 章节已毕 */
-.chapter-end {
-  text-align: center;
-  padding: 48px 0 32px;
-  font-size: 12px;
-  letter-spacing: 0.4em;
-  color: var(--ink-light);
-  opacity: 0.55;
-  padding-left: 0.4em;
-}
-
-.chapter-end::before,
-.chapter-end::after {
-  content: '·';
-  margin: 0 14px;
-  opacity: 0.6;
-}
+/* 章节已毕已去除：整章列表结尾已足够明显 */
 
 /* ============================================
    抽屉（目录）

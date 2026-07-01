@@ -131,8 +131,6 @@
           </div>
         `).join('')}
       </div>
-
-      <div class="chapter-end">本章已毕</div>
     `;
     chapterReader.innerHTML = html;
   }
