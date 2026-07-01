@@ -115,28 +115,28 @@ body::before {
 }
 
 /* ============================================
-   书名
+   装饰（纯线条，无文字）
    ============================================ */
-.book-title {
-  font-size: clamp(22px, 5vw, 30px);
-  font-weight: 500;
-  letter-spacing: 0.4em;
-  color: var(--ink);
-  text-align: center;
-  margin: 0 0 8px;
-  /* letter-spacing 会让最后一个字右侧多出间距，用 padding-left 补偿视觉居中 */
-  padding-left: 0.4em;
-  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-}
-
-.book-title::after {
-  content: '';
-  display: block;
-  width: 40px;
+.ornament {
+  position: relative;
+  width: 96px;
   height: 1px;
   background: var(--line);
-  margin: 10px auto 0;
-  opacity: 0.6;
+  margin: 0 auto 16px;
+  opacity: 0.7;
+}
+
+.ornament::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--paper-bg-2);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* ============================================
@@ -265,6 +265,35 @@ body::before {
   padding: 4px 12px;
   border-radius: 12px;
   pointer-events: auto;
+  flex: none;
+}
+
+/* 品牌名（i 右边的小字） */
+.brand {
+  flex: 1;
+  text-align: left;
+  margin-left: 10px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brand-sep {
+  margin: 0 6px;
+  color: var(--ink-light);
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+.brand-sub {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-light);
+  font-weight: 400;
 }
 
 /* ============================================
@@ -375,7 +404,9 @@ body::before {
 @media (max-width: 380px) {
   .paper { padding: 24px 20px 24px; }
   .quote-text { font-size: 20px; }
-  .book-title { font-size: 20px; letter-spacing: 0.3em; padding-left: 0.3em; }
+  .ornament { width: 72px; margin-bottom: 12px; }
+  .brand-sub { display: none; }
+  .brand-sep { display: none; }
 }
 
 @media (min-width: 768px) {
