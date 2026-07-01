@@ -1,7 +1,9 @@
 # 处世悬镜 PWA
 
 > 南北朝傅昭《处世悬镜》108 句 memento PWA  
-> 整理：河马 🦛 2026-06-30
+> 整理：河马 🦛, 2026-07-01  
+> **线上版本**: https://chushi-jing.pages.dev/  
+> **GitHub**: https://github.com/kumabarloc/chushi-jing
 
 ## 📦 文件结构
 
@@ -45,6 +47,7 @@ python3 -m http.server 8080
 | 添加到主屏幕 | ✅ | manifest.json + icons |
 | 键盘控制 | ✅ | 空格/回车换句 |
 | iOS 安全区适配 | ✅ | env(safe-area-inset-*) |
+| **空解读自动隐藏** | ✅ | 原文已直白时不显示解读区 |
 | 暗色/深色模式 | ❌ | v2 |
 | 章节筛选 | ❌ | v2 |
 | 收藏功能 | ❌ | v2 |
@@ -64,7 +67,27 @@ python3 -m http.server 8080
 
 - 简体原文：古文岛（古诗文网）
 - 繁体原文：维基文库 2026-06-30 导出
-- 逐句解读：综合多版本注释（参考 sohu 网友译文）
+- **逐句解读：河马自译 v0.3**（空优先规则，67 句空 + 41 句简译）
+  - v0.1 用了 sohu 网友译文，v0.2 修 4 处 typo，v0.3 全面重写为河马自译精简版
 
-## 🌐 部署（待定）
+## 📝 版本历史
 
+- **v0.1** (2026-06-30): 初版，10 文件 / 120KB，sohu 网友译文
+- **v0.2** (2026-06-30): 修复 4 处译文质量问题 (曲之 #7/#9/#10/#12)
+- **v0.3** (2026-07-01): 译文全面重写，67 句空 + 41 句简译，data.js 从 33KB 缩到 16KB
+- **v0.3 deployed** (2026-07-01): GitHub + Cloudflare Pages 部署成功
+
+## 🛠 更新代码流程
+
+```bash
+cd chushi-pwa
+# 改完后:
+git add -A && git commit -m "..." && git push
+# Cloudflare Pages 自动重新部署, 3-5 分钟生效
+```
+
+## 🌐 部署
+
+✅ 已部署到 Cloudflare Pages (GitHub 自动集成)
+- URL: https://chushi-jing.pages.dev/
+- 仓库: github.com/kumabarloc/chushi-jing
