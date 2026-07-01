@@ -51,10 +51,37 @@
 
   <!-- 顶部工具条 -->
   <div class="toolbar" role="toolbar">
+    <button id="btn-nav" class="tool-btn" aria-label="目录" title="目录">≡</button>
     <button id="btn-info" class="tool-btn" aria-label="关于" title="关于">i</button>
-    <span class="brand">处世悬镜<span class="brand-sep">·</span><span class="brand-sub">南北朝 傅昭</span></span>
+    <span class="brand">处世悬镜<span class="brand-sep">·</span><span class="brand-sub" id="brand-sub">南北朝 傅昭</span></span>
     <span id="counter" class="counter" aria-live="polite">1 / 108</span>
   </div>
+
+  <!-- 抽屉遮罩 -->
+  <div id="drawer-overlay" class="drawer-overlay" hidden></div>
+
+  <!-- 目录抽屉 -->
+  <aside id="drawer" class="drawer" hidden aria-label="目录">
+    <div class="drawer-header">
+      <span class="drawer-title">目 录</span>
+      <button id="btn-close-drawer" class="drawer-close" aria-label="关闭">×</button>
+    </div>
+
+    <nav class="drawer-body" id="drawer-body">
+      <button class="chapter-item chapter-item--mode" data-mode="random" id="mode-random">
+        <span class="ci-name">随机阅读</span>
+        <span class="ci-meta">108 句</span>
+      </button>
+
+      <div class="chapter-divider">章 节</div>
+
+      <div id="chapter-list"></div>
+    </nav>
+
+    <div class="drawer-footer">
+      傅昭 · 南北朝
+    </div>
+  </aside>
 
   <!-- 关于弹窗 -->
   <div id="info-modal" class="modal" hidden>
