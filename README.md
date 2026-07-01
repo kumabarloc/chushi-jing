@@ -1,7 +1,7 @@
 # 处世悬镜 PWA
 
 > 南北朝傅昭《处世悬镜》108 句 memento PWA  
-> 整理：河马 🦛, 2026-07-01  
+> 整理：河马 🦛，2026-07-01  
 > **线上版本**: https://chushi-jing.pages.dev/  
 > **GitHub**: https://github.com/kumabarloc/chushi-jing
 

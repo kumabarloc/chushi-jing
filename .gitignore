@@ -1,2 +1,21 @@
 .DS_Store
 *.log
+
+# 环境与凭据（防止误推）
+.env
+.env.*
+*.key
+*.pem
+*credentials*
+*secrets*
+
+# OpenClaw 工作区文件（防止整个 workspace 被推上去时连带泄露）
+memory/
+MEMORY.md
+TOOLS.md
+AGENTS.md
+SOUL.md
+USER.md
+IDENTITY.md
+HEARTBEAT.md
+BOOTSTRAP.md
