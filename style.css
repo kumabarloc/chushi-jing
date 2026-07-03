@@ -173,24 +173,6 @@ body::before {
 }
 
 /* ============================================
-   解读
-   ============================================ */
-.interp {
-  width: 100%;
-  text-align: center;
-  font-size: clamp(13px, 3.2vw, 15px);
-  line-height: 1.9;
-  color: var(--ink-soft);
-  letter-spacing: 0.03em;
-  padding: 16px 8px;
-  border-top: 1px dashed var(--line);
-  margin-top: 16px;
-  font-weight: 400;
-}
-
-.interp[hidden] { display: none; }
-
-/* ============================================
    底部提示
    ============================================ */
 .hint {
@@ -487,20 +469,6 @@ html.chapter-mode #card {
   font-weight: 500;
 }
 
-.verse-interp {
-  font-size: clamp(13px, 3.2vw, 15px);
-  line-height: 1.8;
-  color: var(--ink-soft);
-  letter-spacing: 0.03em;
-  margin: 0;
-  padding: 8px 0 0;
-  border-top: 1px dotted rgba(184, 159, 110, 0.4);
-}
-
-.verse-interp:empty {
-  display: none;
-}
-
 /* 章节已毕已去除：整章列表结尾已足够明显 */
 
 /* ============================================
@@ -708,5 +676,4 @@ body.chapter-mode .brand-sub {
   .paper { min-height: auto; padding: 32px 32px 20px; }
   .quote { padding: 16px 0; }
   .quote-text { font-size: 20px; line-height: 1.7; }
-  .interp { font-size: 13px; }
 }

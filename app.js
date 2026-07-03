@@ -1,6 +1,7 @@
 // ============================================
 // 处世悬镜 PWA — 主逻辑
 // 模式: random (单句随机) ↔ chapter (整章列表阅读)
+// v0.6: 删除解读（河马自译），只保留原文
 // ============================================
 
 (function() {
@@ -24,7 +25,6 @@
   const chapterReader = document.getElementById('chapter-reader');
   const quoteText = document.getElementById('quote-text');
   const quoteCh = document.getElementById('quote-ch');
-  const interp = document.getElementById('interp');
   const counter = document.getElementById('counter');
   const brandSub = document.getElementById('brand-sub');
   const hintText = document.querySelector('.hint-text');
@@ -41,7 +41,7 @@
   const modeRandomBtn = document.getElementById('mode-random');
 
   // ============================================
-  // 工具：HTML 转义（防止 interp 里有特殊字符破坏结构）
+  // 工具：HTML 转义（防止 text 里有特殊字符破坏结构）
   // ============================================
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -94,13 +94,6 @@
     const q = QUOTES[idx];
     quoteText.textContent = q.text;
     quoteCh.textContent = q.ch;
-    if (q.interp && q.interp.trim()) {
-      interp.textContent = q.interp;
-      interp.hidden = false;
-    } else {
-      interp.textContent = '';
-      interp.hidden = true;
-    }
     counter.textContent = `${idx + 1} / ${QUOTES.length}`;
     state.currentIdx = idx;
     state.lastIdx = idx;
@@ -124,9 +117,6 @@
             <div class="verse-num">${q.n}</div>
             <div class="verse-body">
               <p class="verse-text">${escapeHtml(q.text)}</p>
-              ${q.interp && q.interp.trim()
-                ? `<p class="verse-interp">${escapeHtml(q.interp)}</p>`
-                : ''}
             </div>
           </div>
         `).join('')}
@@ -267,7 +257,7 @@
   // 复制
   // ============================================
   function buildQuoteText(q) {
-    return `${q.text}\n——《${q.ch}》\n\n【解读】${q.interp && q.interp.trim() ? q.interp : '（无解读）'}`;
+    return `${q.text}\n——《${q.ch}》`;
   }
 
   function doCopy(text) {
