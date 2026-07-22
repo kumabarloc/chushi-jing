@@ -12,6 +12,19 @@
   --seal: #B23A2A;              /* 印泥红 */
   --line: #B89F6E;              /* 装饰线 */
   --shadow: rgba(80, 50, 20, 0.15);
+
+  /* v0.4 Apple-style easings (Emil Kowalski 推荐) */
+  --ease-out:      cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out:   cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer:   cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* v0.4 timings */
+  --t-press:       120ms;
+  --t-fade-out:    180ms;
+  --t-fade-in:     380ms;
+  --t-drawer:      350ms;
+  --t-progress:    500ms;
 }
 
 * {
@@ -27,6 +40,8 @@ html, body {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  /* v0.4: 干掉 300ms tap delay（替代之前的 lastTouchEnd hack） */
+  touch-action: manipulation;
 }
 
 body {
@@ -73,11 +88,9 @@ body::before {
   padding-bottom: calc(env(safe-area-inset-bottom) + 60px);
 }
 
-#card:active .paper {
-  transform: scale(0.99);
-  transition: transform 0.1s ease;
-}
-
+/* v0.4: 按键反馈（取代 :active 的 scale(0.99)）
+   - scale(0.97) + 强 ease-out (Emil 推荐)
+   - 用 class 控制，Pointerdown 立刻加，pointerup/cancel 立刻去 */
 .paper {
   width: 100%;
   max-width: 640px;
@@ -94,13 +107,53 @@ body::before {
   box-shadow:
     0 2px 8px var(--shadow),
     inset 0 0 40px rgba(184, 159, 110, 0.15);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  /* 1.4: 保留 transition 给 press progress / pressed class，
+     换句动效改用 WAAPI（见 app.js） */
+  transition: transform var(--t-press) var(--ease-out);
+  will-change: transform;
 }
 
-/* 切换时的淡入动画 */
-.paper.fading {
-  opacity: 0;
-  transform: translateY(8px);
+.paper.pressed {
+  transform: scale(0.97);
+}
+
+.paper.fired {
+  animation: paperFired 600ms var(--ease-out);
+}
+
+@keyframes paperFired {
+  0%   { transform: scale(0.97); }
+  40%  { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+
+/* v0.4: 长按进度条（hold-to-confirm 模式）
+   - 印泥红线从左铺到右
+   - 500ms linear 填满 → 触发复制
+   - 中途松手/拖走 → 200ms ease-out 收回 */
+.press-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--seal);
+  border-radius: 0 0 4px 4px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
+}
+
+.paper.pressing .press-progress {
+  transition: transform var(--t-progress) linear;
+  transform: scaleX(1);
+}
+
+.paper.cancelled .press-progress {
+  transition: transform 200ms var(--ease-out);
+  transform: scaleX(0);
 }
 
 /* 顶部装饰线 */
@@ -228,7 +281,11 @@ body::before {
   line-height: 1;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s;
+  /* v0.4: 明确 transition 属性（避免 all），加 scale(0.97) 反馈 */
+  transition:
+    transform var(--t-press) var(--ease-out),
+    background-color var(--t-press) var(--ease-out),
+    color var(--t-press) var(--ease-out);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -237,6 +294,7 @@ body::before {
 .tool-btn:active {
   background: var(--line);
   color: var(--paper-bg-2);
+  transform: scale(0.94);
 }
 
 .counter {
@@ -485,12 +543,14 @@ html.chapter-mode #card {
   box-shadow: 2px 0 12px var(--shadow);
   z-index: 1000;
   transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  /* v0.4: iOS 风格抽屉曲线 */
+  transition: transform var(--t-drawer) var(--ease-drawer);
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   overflow: hidden;
+  will-change: transform;
 }
 
 .drawer[hidden] { display: flex; }  /* 让 hidden 仅被 JS 控制，配合 transform */
@@ -505,7 +565,8 @@ html.chapter-mode #card {
   z-index: 999;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  /* v0.4: 与抽屉同步 */
+  transition: opacity var(--t-drawer) var(--ease-drawer);
 }
 
 .drawer-overlay.open {
@@ -676,4 +737,54 @@ body.chapter-mode .brand-sub {
   .paper { min-height: auto; padding: 32px 32px 20px; }
   .quote { padding: 16px 0; }
   .quote-text { font-size: 20px; line-height: 1.7; }
+}
+
+/* ============================================
+   v0.4: 无障碍 - Reduced Motion
+   ============================================
+   用户偏好"减少动效" → 保留信息，去掉运动
+   不只是 opacity，也不用 transform / blur */
+@media (prefers-reduced-motion: reduce) {
+  /* 换句：纯 opacity crossfade，无 transform 无 blur */
+  .paper {
+    transition: opacity 150ms ease !important;
+    transform: none !important;
+  }
+  .paper.pressed {
+    transform: none !important;
+  }
+  .paper.fired {
+    animation: none !important;
+  }
+  /* 按键 progress 不显示（保留短轻提示） */
+  .press-progress {
+    transition: opacity 100ms ease !important;
+    transform: scaleX(0) !important;
+    opacity: 0 !important;
+  }
+  .paper.pressing .press-progress {
+    transform: scaleX(0) !important;
+  }
+  /* 抽屉：硬切短一点 */
+  .drawer {
+    transition: transform 200ms ease !important;
+  }
+  .drawer-overlay {
+    transition: opacity 200ms ease !important;
+  }
+  .tool-btn {
+    transition:
+      background-color 100ms ease,
+      color 100ms ease !important;
+  }
+  .tool-btn:active {
+    transform: none !important;
+  }
+  .toast {
+    animation: none !important;
+  }
+  /* 尊重 prefers-contrast（可选） */
+  @media (prefers-contrast: more) {
+    .paper { border-width: 2px; }
+  }
 }

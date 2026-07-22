@@ -1,7 +1,7 @@
 // ============================================
 // 处世悬镜 PWA — 主逻辑
 // 模式: random (单句随机) ↔ chapter (整章列表阅读)
-// v0.6: 删除解读（河马自译），只保留原文
+// v0.7: v0.3 + 动效全面升级（Apple/Emil 规则）
 // ============================================
 
 (function() {
@@ -15,10 +15,18 @@
     lastIdx: -1,
     isAnimating: false,
     drawerOpen: false,
-    pressTimer: null,
-    pressStart: 0,
-    isLongPress: false,
   };
+
+  // v0.4: 长按检测（闭包变量替代 state.pressTimer/pressStart/isLongPress）
+  let pressTimer = null;
+  let pressStartX = 0;
+  let pressStartY = 0;
+  const PRESS_HOLD_MS = 500;     // 长按阈值
+  const PRESS_CANCEL_DIST = 12;  // 拖动超过这个距离（px）取消长按
+
+  // v0.4: reduced-motion 检测
+  const motionReduced = () =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---- DOM ----
   const card = document.getElementById('card');
@@ -126,18 +134,65 @@
   }
 
   // ============================================
-  // 下一句（仅随机模式）
+  // v0.4: 下一句 — WAAPI crossfade + blur bridge
   // ============================================
+  //
+  // Apple-style 两段动效：
+  //   1. 出场（180ms, ease-in）：从中心微微上飘 + blur 4px 桥接
+  //   2. 换内容
+  //   3. 入场（380ms, 强 ease-out）：从下方升起 + blur 退场 + 落定
+  //
+  // 比 v0.3 的 setTimeout 改进：
+  //   - 中断性：用户连点不会被锁定
+  //   - 真实空间感：blur bridge 避免 "两个对象重叠"
+  //   - reduced-motion 降级：纯 opacity 切换，无 transform 无 blur
   function nextQuote() {
     if (state.mode !== 'random') return;
     if (state.isAnimating) return;
     state.isAnimating = true;
-    paper.classList.add('fading');
-    setTimeout(() => {
+
+    if (motionReduced()) {
+      // 无障碍模式：纯 opacity 切换
+      const fadeOut = paper.animate(
+        [{ opacity: 1 }, { opacity: 0 }],
+        { duration: 80, easing: 'ease', fill: 'forwards' }
+      );
+      fadeOut.onfinish = () => {
+        showQuote(randIdx());
+        const fadeIn = paper.animate(
+          [{ opacity: 0 }, { opacity: 1 }],
+          { duration: 120, easing: 'ease', fill: 'forwards' }
+        );
+        fadeIn.onfinish = () => { state.isAnimating = false; };
+      };
+      return;
+    }
+
+    // 阶段 1：出场（短 + ease-in + blur bridge）
+    const fadeOut = paper.animate([
+      { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0)' },
+      { opacity: 0, transform: 'translateY(-8px) scale(0.99)', filter: 'blur(4px)' }
+    ], {
+      duration: 180,
+      easing: 'cubic-bezier(0.4, 0, 1, 1)',  // ease-in for exit
+      fill: 'forwards'
+    });
+
+    fadeOut.onfinish = () => {
+      // 阶段 2：换内容
       showQuote(randIdx());
-      paper.classList.remove('fading');
-      state.isAnimating = false;
-    }, 250);
+
+      // 阶段 3：入场（长 + 强 ease-out + blur 退场）
+      const fadeIn = paper.animate([
+        { opacity: 0, transform: 'translateY(8px) scale(0.99)', filter: 'blur(4px)' },
+        { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0)' }
+      ], {
+        duration: 380,
+        easing: 'cubic-bezier(0.23, 1, 0.32, 1)',  // 强 ease-out for entry
+        fill: 'forwards'
+      });
+      fadeIn.onfinish = () => { state.isAnimating = false; };
+    };
   }
 
   // ============================================
@@ -307,29 +362,16 @@
   }
 
   // ============================================
-  // 长按检测（仅随机模式生效）
+  // v0.4: 取消长按的辅助函数（统一处理 timer + classList）
   // ============================================
-  function onPressStart(e) {
-    state.isLongPress = false;
-    state.pressStart = Date.now();
-    state.pressTimer = setTimeout(() => {
-      state.isLongPress = true;
-      if (navigator.vibrate) navigator.vibrate(10);
-    }, 500);
-  }
-
-  function onPressEnd(e) {
-    clearTimeout(state.pressTimer);
-    const duration = Date.now() - state.pressStart;
-    if (duration >= 500 && state.isLongPress) {
-      copyCurrent();
-      if (e && e.preventDefault) e.preventDefault();
+  function cancelPress() {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
     }
-  }
-
-  function onPressCancel() {
-    clearTimeout(state.pressTimer);
-    state.isLongPress = false;
+    paper.classList.remove('pressed');
+    paper.classList.remove('pressing');
+    paper.classList.remove('cancelled');
   }
 
   // ============================================
@@ -342,18 +384,65 @@
   // 事件绑定
   // ============================================
 
-  // 随机模式：点击卡片 = 换句；长按 = 复制
-  card.addEventListener('click', (e) => {
-    if (state.isLongPress) { state.isLongPress = false; return; }
-    nextQuote();
+  // v0.4: Pointer Events 统一处理（替代 touchstart/end + mousedown/up 两套）
+  //   - pointerdown 立即反馈（不等 click 100ms 延迟）
+  //   - setPointerCapture 跟踪手指/鼠标拖出元素边界
+  //   - pointermove 检测拖动距离 → 超阈取消长按
+  //   - pointerup 按 timer 状态分流：还在 → 点击换句；不在 → 长按已触发
+  card.addEventListener('pointerdown', (e) => {
+    if (state.mode !== 'random') return;
+    // 1. 即时视觉反馈（Pointerdown，不是 click！）
+    paper.classList.add('pressed');
+    // 2. Pointer capture（即使手指/鼠标移出元素也能跟踪）
+    try { card.setPointerCapture(e.pointerId); } catch (err) {}
+    // 3. 记录起始位置（用于 pointermove 计算拖动距离）
+    pressStartX = e.clientX;
+    pressStartY = e.clientY;
+    // 4. 启动 press progress（CSS transition + class toggle）
+    paper.classList.add('pressing');
+    // 5. 500ms 后判定为长按
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      paper.classList.remove('pressed');
+      paper.classList.remove('pressing');
+      copyCurrent();
+      if (navigator.vibrate) navigator.vibrate(10);
+      // 触发"已完成"反馈动画
+      paper.classList.add('fired');
+      setTimeout(() => paper.classList.remove('fired'), 600);
+    }, PRESS_HOLD_MS);
   });
-  card.addEventListener('touchstart', onPressStart, { passive: true });
-  card.addEventListener('touchend', onPressEnd);
-  card.addEventListener('touchcancel', onPressCancel);
-  card.addEventListener('mousedown', onPressStart);
-  card.addEventListener('mouseup', onPressEnd);
-  card.addEventListener('mouseleave', onPressCancel);
 
+  card.addEventListener('pointermove', (e) => {
+    if (!pressTimer) return;
+    const dx = e.clientX - pressStartX;
+    const dy = e.clientY - pressStartY;
+    if (Math.sqrt(dx * dx + dy * dy) > PRESS_CANCEL_DIST) {
+      // 拖动距离过大 → 取消（progress snap back）
+      paper.classList.add('cancelled');
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      setTimeout(() => paper.classList.remove('pressed', 'pressing', 'cancelled'), 220);
+    }
+  });
+
+  card.addEventListener('pointerup', () => {
+    // 如果长按 timer 还在 → 是点击 → 换句
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      paper.classList.remove('pressed');
+      paper.classList.remove('pressing');
+      nextQuote();
+    }
+    // 否则长按已触发（已在 pointerdown timeout 里处理）
+  });
+
+  card.addEventListener('pointercancel', () => {
+    cancelPress();
+  });
+
+  // 键盘快捷键（保留）
   card.addEventListener('keydown', (e) => {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
@@ -406,13 +495,9 @@
     closeDrawer();
   });
 
-  // iOS 双击放大防护
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', (e) => {
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) e.preventDefault();
-    lastTouchEnd = now;
-  }, { passive: false });
+  // v0.4: iOS 双击放大防护 已移除
+//   之前用 300ms touchend hack 会干扰其他事件
+//   现在用 CSS `touch-action: manipulation` 干掉 tap delay（见 style.css）
 
   // ESC 关弹窗/抽屉
   document.addEventListener('keydown', (e) => {
