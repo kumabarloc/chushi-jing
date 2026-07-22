@@ -1,7 +1,7 @@
 // 处世悬镜 PWA — Service Worker
 // v0.6: 加版本号机制 + 核心资源改 network-first（保证改完代码后刷新即生效）
 
-const VERSION = 'v0.6';
+const VERSION = 'v0.4';
 const CACHE_NAME = `chushi-${VERSION}`;
 
 // 核心资源：网络优先（保证更新即时生效）
